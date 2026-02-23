@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Tea Timer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="header-bar">
+    <div class="header-tab">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="13" r="8"
+                stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="13" x2="12" y2="9"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="13" x2="15" y2="13"
+              stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="10" y="2" width="4" height="3" rx="1"
+              fill="currentColor"/>
+      </svg>
+      <span>Timer</span>
+    </div>
+    <button class="settings-btn" id="btnSettings" title="Options">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49
+          0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484
+          0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49
+          0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94
+          0 .31.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38
+          1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24
+          1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12
+          15.6A3.6 3.6 0 1115.6 12 3.611 3.611 0 0112 15.6z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="ring-area">
+    <svg class="ring-svg" viewBox="0 0 200 200">
+      <g id="tickMarks" class="ticks"></g>
+      <circle class="ring-bg" cx="100" cy="100" r="84"/>
+      <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="84"/>
+    </svg>
+    <div class="ring-center">
+      <div id="inputArea">
+        <div class="field-group">
+          <div class="field">
+            <input id="minInput" type="text" inputmode="numeric"
+                   maxlength="2" value="12" autocomplete="off">
+            <label>MIN</label>
+          </div>
+          <span class="colon">:</span>
+          <div class="field">
+            <input id="secInput" type="text" inputmode="numeric"
+                   maxlength="2" value="00" autocomplete="off">
+            <label>SEC</label>
+          </div>
+        </div>
+      </div>
+      <div id="countdownArea" class="hidden">
+        <div class="countdown-time" id="countdownTime">05:00</div>
+        <div class="countdown-label" id="countdownLabel">remaining</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-row">
+    <button class="chip" data-sec="30">+ 0:30</button>
+    <button class="chip" data-sec="60">+ 1:00</button>
+    <button class="chip" data-sec="300">+ 5:00</button>
+  </div>
+
+  <div class="preset-row" id="presetRow"></div>
+
+  <div class="controls">
+    <button class="ctrl reset hidden" id="btnReset" title="Reset">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69
+          6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+      </svg>
+    </button>
+    <button class="ctrl play" id="btnStart" title="Start">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    </button>
+    <button class="ctrl play hidden" id="btnPause" title="Pause">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
+    </button>
+    <button class="ctrl play hidden" id="btnResume" title="Resume">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="overlay hidden" id="overlay">
+    <div class="overlay-body">
+      <div class="done-emoji">🍵</div>
+      <div class="done-text" id="doneText">Tea is ready!</div>
+      <button class="btn-dismiss" id="btnDismiss">Dismiss</button>
+    </div>
+  </div>
+
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
