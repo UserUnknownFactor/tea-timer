@@ -1,3 +1,33 @@
+const api = typeof browser !== "undefined" ? browser : chrome;
+
+function storageGet(key) {
+  return new Promise((resolve) => {
+    api.storage.local.get(key, (result) => {
+      resolve(result);
+    });
+  });
+}
+
+function storageSet(data) {
+  return new Promise((resolve) => {
+    api.storage.local.set(data, () => {
+      resolve();
+    });
+  });
+}
+
+function sendMessage(msg) {
+  return new Promise((resolve, reject) => {
+    api.runtime.sendMessage(msg, (response) => {
+      if (api.runtime.lastError) {
+        reject(api.runtime.lastError);
+      } else {
+        resolve(response);
+      }
+    });
+  });
+}
+
 const DEFAULT_OPTIONS = {
   presets: [
     { label: "Green", minutes: 2, seconds: 0 },
@@ -27,7 +57,7 @@ let alarmTimeout = null;
 // ── Options ──
 
 async function loadOptions() {
-  const result = await browser.storage.local.get("options");
+  const result = await storageGet("options");
   options = Object.assign({}, DEFAULT_OPTIONS, result.options || {});
   if (!Array.isArray(options.presets) || options.presets.length !== 3) {
     options.presets = DEFAULT_OPTIONS.presets;
@@ -39,7 +69,7 @@ async function loadOptions() {
 
 async function init() {
   await loadOptions();
-  const result = await browser.storage.local.get("timerState");
+  const result = await storageGet("timerState");
   if (result.timerState) {
     timerState = result.timerState;
     if (timerState.status === "running") {
@@ -65,7 +95,7 @@ init();
 // ── State ──
 
 function saveState() {
-  browser.storage.local.set({ timerState });
+  storageSet({ timerState });
 }
 
 function startTicking() {
@@ -100,12 +130,12 @@ function timerFinished() {
   saveState();
   updateBadge();
   startAlarm();
-  browser.runtime.sendMessage({ type: "finished" }).catch(() => {});
+  sendMessage({ type: "finished" }).catch(() => {});
 
   if (options && options.showToast) {
-    browser.notifications.create("tea-timer-done", {
+    api.notifications.create("tea-timer-done", {
       type: "basic",
-      iconUrl: browser.runtime.getURL("icons/timer.svg"),
+      iconUrl: api.runtime.getURL("icons/timer.svg"),
       title: "Tea Timer",
       message: (options && options.toastText) || DEFAULT_OPTIONS.toastText,
     });
@@ -129,15 +159,20 @@ function resetTimer() {
 function updateBadge() {
   const r = Math.ceil(timerState.remainingSeconds);
 
+  // Use browserAction for MV2, action for MV3
+  const badgeApi = api.browserAction || api.action;
+
   if (timerState.status === "idle") {
-    browser.browserAction.setBadgeText({ text: "" });
+    badgeApi.setBadgeText({ text: "" });
     return;
   }
 
   if (timerState.status === "finished") {
-    browser.browserAction.setBadgeText({ text: "!" });
-    browser.browserAction.setBadgeBackgroundColor({ color: "#d93025" });
-    browser.browserAction.setBadgeTextColor({ color: "#ffffff" });
+    badgeApi.setBadgeText({ text: "!" });
+    badgeApi.setBadgeBackgroundColor({ color: "#d93025" });
+    if (badgeApi.setBadgeTextColor) {
+      badgeApi.setBadgeTextColor({ color: "#ffffff" });
+    }
     return;
   }
 
@@ -150,11 +185,13 @@ function updateBadge() {
     text = r + "s";
   }
 
-  browser.browserAction.setBadgeText({ text });
-  browser.browserAction.setBadgeBackgroundColor({
+  badgeApi.setBadgeText({ text });
+  badgeApi.setBadgeBackgroundColor({
     color: r <= 10 ? "#d93025" : r <= 30 ? "#ea8600" : "#1a73e8",
   });
-  browser.browserAction.setBadgeTextColor({ color: "#ffffff" });
+  if (badgeApi.setBadgeTextColor) {
+    badgeApi.setBadgeTextColor({ color: "#ffffff" });
+  }
 }
 
 // ── Sound ──
@@ -204,7 +241,7 @@ function startAlarm() {
       stopAlarm();
       // Auto-reset to idle after alarm ends
       resetTimer();
-      browser.runtime.sendMessage({ type: "stateChanged" }).catch(() => {});
+      sendMessage({ type: "stateChanged" }).catch(() => {});
     }, dur);
   }
 }
@@ -226,7 +263,7 @@ function clearAlarmTimeout() {
 
 // ── Messages ──
 
-browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.type) {
     case "start":
       stopAlarm();
@@ -304,7 +341,7 @@ browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case "optionsChanged":
       loadOptions().then(() => {
-        browser.runtime.sendMessage({ type: "optionsUpdated" }).catch(() => {});
+        sendMessage({ type: "optionsUpdated" }).catch(() => {});
       });
       sendResponse({ ok: true });
       break;
@@ -312,10 +349,10 @@ browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true;
 });
 
-browser.notifications.onClicked.addListener((id) => {
+api.notifications.onClicked.addListener((id) => {
   if (id === "tea-timer-done") {
     resetTimer();
-    browser.notifications.clear(id);
-    browser.runtime.sendMessage({ type: "stateChanged" }).catch(() => {});
+    api.notifications.clear(id);
+    sendMessage({ type: "stateChanged" }).catch(() => {});
   }
 });

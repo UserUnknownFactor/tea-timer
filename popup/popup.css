@@ -55,6 +55,8 @@ body {
   color: var(--text);
   user-select: none;
   -moz-user-select: none;
+  transition: none !important;
+  overflow: hidden;
 }
 
 .hidden { display: none !important; }
@@ -62,6 +64,7 @@ body {
 .container {
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 /* ── Header ── */
@@ -121,12 +124,14 @@ body {
   width: 190px;
   height: 190px;
   margin: 14px auto 6px;
+  overflow: hidden;
 }
 
 .ring-svg {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 .ticks line { stroke: var(--tick); stroke-width: 1.2; }

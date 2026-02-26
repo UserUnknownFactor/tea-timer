@@ -1,59 +1,43 @@
 (() => {
   // ── Dark mode: use Firefox theme API ──
-  async function detectDark() {
+  (function applyInitialTheme() {
+    const saved = localStorage.getItem("sticky_theme");
+    const isDark = saved === "dark";
+    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.style.backgroundColor = isDark ? "#202124" : "#ffffff";
+  })();
+  
+  async function updateTheme() {
+    const STORAGE_KEY = "sticky_theme";
+    const root = document.documentElement;
+    const currentlyAppliedIsDark = root.classList.contains("dark");
+  
     try {
-      // Method 1: Firefox theme API
-      if (browser.theme && browser.theme.getCurrent) {
-        const theme = await browser.theme.getCurrent();
-        if (theme && theme.colors) {
-          const bg = theme.colors.frame || theme.colors.toolbar;
-          if (bg) {
-            const dark = isColorDark(bg);
-            document.documentElement.classList.toggle("dark", dark);
-            return;
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+  
+      if (tabs[0] && tabs[0].url && (tabs[0].url.startsWith("http") || tabs[0].url.startsWith("file"))) {
+        
+        const result = await browser.tabs.executeScript(tabs[0].id, {
+          code: "window.matchMedia('(prefers-color-scheme: dark)').matches"
+        });
+  
+        if (result && typeof result[0] === "boolean") {
+          const detectedDark = result[0];
+  
+          if (detectedDark !== currentlyAppliedIsDark) {
+            localStorage.setItem(STORAGE_KEY, detectedDark ? "dark" : "light");
+            root.classList.toggle("dark", detectedDark);
+            root.style.backgroundColor = detectedDark ? "#202124" : "#ffffff";
           }
+          return;
         }
       }
-    } catch (e) {}
-
-    // Method 2: matchMedia
-    try {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      document.documentElement.classList.toggle("dark", mq.matches);
-      mq.addEventListener("change", (e) => {
-        document.documentElement.classList.toggle("dark", e.matches);
-      });
-      return;
-    } catch (e) {}
-
-    // Method 3: check computed background
-    const bg = getComputedStyle(document.body).backgroundColor;
-    document.documentElement.classList.toggle("dark", isColorDark(bg));
-  }
-
-  function isColorDark(color) {
-    if (!color) return false;
-    // Handle rgb(r, g, b) or #hex
-    let r, g, b;
-    const rgb = color.match(/\d+/g);
-    if (rgb && rgb.length >= 3) {
-      r = parseInt(rgb[0]);
-      g = parseInt(rgb[1]);
-      b = parseInt(rgb[2]);
-    } else if (color.startsWith("#")) {
-      const hex = color.replace("#", "");
-      r = parseInt(hex.substring(0, 2), 16);
-      g = parseInt(hex.substring(2, 4), 16);
-      b = parseInt(hex.substring(4, 6), 16);
-    } else {
-      return false;
+    } catch (e) {
+      console.log("Restricted page, maintaining sticky theme.");
     }
-    // Luminance check
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance < 0.5;
   }
-
-  detectDark();
+  
+  updateTheme();
 
   // ── Elements ──
   const $ = (s) => document.getElementById(s);

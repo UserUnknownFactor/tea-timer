@@ -1,8 +1,8 @@
 (() => {
   const DEFAULT_OPTIONS = {
     presets: [
-      { label: "Green", minutes: 2, seconds: 0 },
-      { label: "Black", minutes: 4, seconds: 0 },
+      { label: "Black", minutes: 5, seconds: 0 },
+      { label: "Water", minutes: 12, seconds: 0 },
       { label: "Herbal", minutes: 7, seconds: 0 }
     ],
     showToast: true,
@@ -23,15 +23,27 @@
   const btnReset = document.getElementById("btnReset");
   const savedToast = document.getElementById("savedToast");
 
-  // ── Load ──
+  // ── Load with retry ──
 
-  async function load() {
-    const result = await browser.storage.local.get("options");
-    const opts = Object.assign({}, DEFAULT_OPTIONS, result.options || {});
-    if (!Array.isArray(opts.presets) || opts.presets.length !== 3) {
-      opts.presets = DEFAULT_OPTIONS.presets;
+  async function load(retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const result = await browser.storage.local.get("options");
+        const opts = Object.assign({}, DEFAULT_OPTIONS, result.options || {});
+        if (!Array.isArray(opts.presets) || opts.presets.length !== 3) {
+          opts.presets = DEFAULT_OPTIONS.presets;
+        }
+        fillForm(opts);
+        return;
+      } catch (err) {
+        console.warn("options.js: load attempt", i + 1, "failed:", err);
+        if (i < retries - 1) {
+          await new Promise((r) => setTimeout(r, 200 * (i + 1)));
+        }
+      }
     }
-    fillForm(opts);
+    console.warn("options.js: using defaults after all retries failed");
+    fillForm(DEFAULT_OPTIONS);
   }
 
   // ── Fill form ──
@@ -115,10 +127,14 @@
   // ── Save ──
 
   btnSave.addEventListener("click", async () => {
-    const opts = readForm();
-    await browser.storage.local.set({ options: opts });
-    browser.runtime.sendMessage({ type: "optionsChanged" }).catch(() => {});
-    showSavedFeedback();
+    try {
+      const opts = readForm();
+      await browser.storage.local.set({ options: opts });
+      browser.runtime.sendMessage({ type: "optionsChanged" }).catch(() => {});
+      showSavedFeedback();
+    } catch (err) {
+      console.error("options.js: save failed:", err);
+    }
   });
 
   // ── Reset ──
@@ -139,7 +155,11 @@
     }, 2500);
   }
 
-  // ── Init ──
+  // ── Init: wait for DOM + storage ready ──
 
-  load();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => load());
+  } else {
+    load();
+  }
 })();
